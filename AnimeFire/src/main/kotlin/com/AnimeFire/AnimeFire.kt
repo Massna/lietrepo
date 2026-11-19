@@ -225,28 +225,85 @@ class AnimeFire : MainAPI() {
                         .maxOrNull()
 
                     // O playlist HLS vem camuflado com extensao .jpg (o CDN responde
-                    // content-type application/vnd.apple.mpegurl) — sempre M3U8.
-                    callback.invoke(
-                        newExtractorLink(
-                            source = "AnimeFire",
-                            name = "AnimeFire $label" + (height?.let { " (${it}p)" } ?: ""),
-                            url = streamUrl,
-                            type = ExtractorLinkType.M3U8
-                        ) {
-                            this.quality = height ?: 0
-                            this.referer = "https://animefire.one/"
-                            this.headers = mapOf(
-                                "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36",
-                                "Referer" to "https://animefire.one/"
-                            )
-                        }
-                    )
+                    // content-type application/vnd.apple.mpegurl). O MASTER declara
+                    // CODECS="av01..." — rotulo falso do CDN (o init real e avc1) que
+                    // derruba a selecao de trilhas do ExoPlayer em aparelhos sem AV1.
+                    // Por isso emitimos as variantes de midia DIRETAS (e o master
+                    // apenas como "Auto").
+                    val variants = hlsVariants(streamUrl)
+                    for ((vUrl, vHeight) in variants) {
+                        emitPlayLink(vUrl, vHeight ?: height, label, callback)
+                    }
+                    emitPlayLink(streamUrl, height, "$label Auto", callback)
                     found = true
                 }
             }
             found
         } catch (e: Exception) {
             false
+        }
+    }
+
+    private fun emitPlayLink(
+        url: String,
+        height: Int?,
+        label: String,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        callback.invoke(
+            newExtractorLink(
+                source = "AnimeFire",
+                name = "AnimeFire $label" + (height?.let { " (${it}p)" } ?: ""),
+                url = url,
+                type = ExtractorLinkType.M3U8
+            ) {
+                this.quality = height ?: 0
+                this.referer = "https://animefire.one/"
+                this.headers = mapOf(
+                    "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36",
+                    "Referer" to "https://animefire.one/"
+                )
+            }
+        )
+    }
+
+    // resolve as variantes do master (URI relativas) com a altura real
+    private suspend fun hlsVariants(masterUrl: String): List<Pair<String, Int?>> {
+        return try {
+            val body = app.get(masterUrl, headers = API_HEADERS).text
+            val lines = body.lines()
+            val out = mutableListOf<Pair<String, Int?>>()
+            var i = 0
+            while (i < lines.size) {
+                val line = lines[i].trim()
+                if (line.startsWith("#EXT-X-STREAM-INF")) {
+                    val h = Regex("RESOLUTION=\\d+x(\\d+)").find(line)?.groupValues?.get(1)?.toIntOrNull()
+                    var j = i + 1
+                    while (j < lines.size && (lines[j].isBlank() || lines[j].trim().startsWith("#"))) j++
+                    if (j < lines.size) {
+                        val uri = lines[j].trim()
+                        if (uri.isNotBlank()) {
+                            out.add(if (uri.startsWith("http")) uri else resolveUrl(masterUrl, uri) to h)
+                        }
+                    }
+                    i = j
+                }
+                i++
+            }
+            out
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun resolveUrl(base: String, rel: String): String {
+        if (rel.startsWith("http")) return rel
+        val b = base.substringBeforeLast("/")
+        return if (rel.startsWith("/")) {
+            val origin = base.substringAfter("://").substringBefore("/")
+            "${base.substringBefore("://")}$origin$rel"
+        } else {
+            "$b/$rel"
         }
     }
 }

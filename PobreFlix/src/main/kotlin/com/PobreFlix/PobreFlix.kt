@@ -4,6 +4,7 @@ import com.PobreFlix.extractor.PobreFlixExtractor
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.*
+import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.nodes.Element
 import java.net.URLEncoder
@@ -187,10 +188,18 @@ class PobreFlix : MainAPI() {
             val isAnime = url.contains("/anime")
             val isSerie = url.contains("/series") || url.contains("/doramas")
 
-            val tmdbId = searchTmdbId(cleanTitle, year, isSerie)
+            // ids direto da pagina (validados ao vivo): window.seriesTmdbId /
+            // window.movieTmdbId e data-open-modal-id tt... — sem busca fuzzy
+            val html = document.html()
+            val pageTmdbId = Regex("window\\.(?:series|movie)TmdbId\\s*=\\s*(\\d+)")
+                .find(html)?.groupValues?.get(1)?.toIntOrNull()
+            val ttId = Regex("data-open-modal-id=\"(tt\\d+)\"").find(html)?.groupValues?.get(1)
+                ?: Regex("imdb\\.com/title/(tt\\d+)").find(html)?.groupValues?.get(1)
+            val tmdbId = pageTmdbId ?: searchTmdbId(cleanTitle, year, isSerie)
 
             if (!isSerie) {
-                return newMovieLoadResponse(cleanTitle, url, TvType.Movie, "${tmdbId ?: 0}|movie") {
+                val movieKey = ttId ?: "${tmdbId ?: 0}"
+                return newMovieLoadResponse(cleanTitle, url, TvType.Movie, "$movieKey|movie") {
                     this.posterUrl = poster
                     this.year = year
                     this.plot = synopsis
@@ -200,13 +209,40 @@ class PobreFlix : MainAPI() {
 
             val episodes = mutableListOf<Episode>()
             if (tmdbId != null) {
-                tmdbSeasonEpisodes(tmdbId).forEach { (seasonNum, count) ->
-                    for (epNum in 1..count) {
-                        episodes.add(newEpisode("$tmdbId|$seasonNum|$epNum") {
-                            this.name = "T$seasonNum E$epNum"
-                            this.season = seasonNum
-                            this.episode = epNum
-                        })
+                // episodios reais da pagina (window.seriesSeasonsData) — com titulos
+                val seasonsData = Regex("window\\.seriesSeasonsData\\s*=\\s*(\\[[\\s\\S]*?\\])\\s*;?\\s*</script>")
+                    .find(html)?.groupValues?.get(1)
+                var parsed = false
+                if (!seasonsData.isNullOrBlank()) {
+                    try {
+                        val arr = JSONArray(seasonsData)
+                        for (si in 0 until arr.length()) {
+                            val seasonObj = arr.optJSONObject(si) ?: continue
+                            val seasonNum = seasonObj.optInt("seasonNumber")
+                            val eps = seasonObj.optJSONArray("episodes") ?: continue
+                            for (ei in 0 until eps.length()) {
+                                val ep = eps.optJSONObject(ei) ?: continue
+                                val epNum = ep.optInt("episodeNumber")
+                                parsed = true
+                                episodes.add(newEpisode("$tmdbId|$seasonNum|$epNum") {
+                                    this.name = ep.optString("title").ifBlank { "T$seasonNum E$epNum" }
+                                    this.season = seasonNum
+                                    this.episode = epNum
+                                })
+                            }
+                        }
+                    } catch (_: Exception) {
+                    }
+                }
+                if (!parsed) {
+                    tmdbSeasonEpisodes(tmdbId).forEach { (seasonNum, count) ->
+                        for (epNum in 1..count) {
+                            episodes.add(newEpisode("$tmdbId|$seasonNum|$epNum") {
+                                this.name = "T$seasonNum E$epNum"
+                                this.season = seasonNum
+                                this.episode = epNum
+                            })
+                        }
                     }
                 }
             }
@@ -233,16 +269,18 @@ class PobreFlix : MainAPI() {
             val parts = data.split("|")
             when {
                 parts.size == 2 && parts[1] == "movie" -> {
-                    val tmdbId = parts[0].toIntOrNull() ?: return false
-                    val streams = PobreFlixExtractor.getStreams(tmdbId, "filme", 1, 1)
+                    val key = parts[0].trim()
+                    if (key.isBlank() || key == "0") return false
+                    val streams = PobreFlixExtractor.getStreams(key, "filme", 1, 1)
                     streams.forEach { callback(it) }
                     streams.isNotEmpty()
                 }
                 parts.size == 3 -> {
-                    val tmdbId = parts[0].toIntOrNull() ?: return false
+                    val key = parts[0].trim()
+                    if (key.isBlank() || key == "0") return false
                     val season = parts[1].toIntOrNull() ?: 1
                     val episode = parts[2].toIntOrNull() ?: 1
-                    val streams = PobreFlixExtractor.getStreams(tmdbId, "serie", season, episode)
+                    val streams = PobreFlixExtractor.getStreams(key, "serie", season, episode)
                     streams.forEach { callback(it) }
                     streams.isNotEmpty()
                 }

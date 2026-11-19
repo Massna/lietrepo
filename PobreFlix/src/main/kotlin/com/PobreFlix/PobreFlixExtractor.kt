@@ -47,7 +47,7 @@ object PobreFlixExtractor {
     private data class Server(val id: String, val lang: String, val name: String)
 
     suspend fun getStreams(
-        tmdbId: Int,
+        id: String,
         type: String,
         season: Int,
         episode: Int
@@ -56,10 +56,11 @@ object PobreFlixExtractor {
         val seen = mutableSetOf<String>()
         try {
             val isMovie = type.equals("filme", true)
+            // o fshd resolve id TMDB (603) ou IMDb (tt0328832) nas duas rotas
             val pageUrl = if (isMovie) {
-                "$FSHD/filme/$tmdbId"
+                "$FSHD/filme/$id"
             } else {
-                "$FSHD/serie/$tmdbId/$season/$episode"
+                "$FSHD/serie/$id/$season/$episode"
             }
             val html = app.get(pageUrl, headers = HEADERS).text
 

@@ -354,7 +354,7 @@ class Goyabu : MainAPI() {
                         episodeObjects.forEachIndexed { objIndex, jsonObj ->
                             try {
                                 val epNumber = extractValueFromJson(jsonObj, "episodio", "episode", "number")?.toIntOrNull() ?: (objIndex + 1)
-                                val epId = extractValueFromJson(jsonObj, "id") ?: ""
+                                val epId = extractValueFromJson(jsonObj, "link", "url", "id") ?: ""
                                 val epTitle = extractValueFromJson(jsonObj, "title", "name") ?: "Episódio $epNumber"
                                 
                                 val epUrl = buildEpisodeUrl(epId, epNumber)
@@ -424,7 +424,8 @@ class Goyabu : MainAPI() {
     }
 
     private fun extractArrayContent(scriptContent: String, arrayName: String): String {
-        val startIndex = scriptContent.indexOf("$arrayName = [")
+        val nameMatch = Regex("""["']?$arrayName["']?\s*[=:]\s*\[""").find(scriptContent)
+        val startIndex = nameMatch?.range?.last ?: -1
         if (startIndex == -1) return ""
         
         var braceCount = 0
@@ -500,11 +501,12 @@ class Goyabu : MainAPI() {
 
     private fun extractValueFromJson(json: String, vararg keys: String): String? {
         for (key in keys) {
-            val pattern1 = Regex(""""$key"\s*:\s*"([^"]*)"""")
+            // chaves com OU sem aspas (o site usa os dois formatos)
+            val pattern1 = Regex("""["']?$key["']?\s*:\s*["']([^"']*)["']""")
             val match1 = pattern1.find(json)
             if (match1 != null) return match1.groupValues.getOrNull(1)
-            
-            val pattern2 = Regex(""""$key"\s*:\s*(\d+)""")
+
+            val pattern2 = Regex("""["']?$key["']?\s*:\s*(\d+)""")
             val match2 = pattern2.find(json)
             if (match2 != null) return match2.groupValues.getOrNull(1)
         }
