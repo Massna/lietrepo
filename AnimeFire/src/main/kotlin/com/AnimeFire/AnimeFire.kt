@@ -283,7 +283,7 @@ class AnimeFire : MainAPI() {
                     if (j < lines.size) {
                         val uri = lines[j].trim()
                         if (uri.isNotBlank()) {
-                            out.add(if (uri.startsWith("http")) uri else resolveUrl(masterUrl, uri) to h)
+                            out.add((if (uri.startsWith("http")) uri else resolveUrl(masterUrl, uri)) to h)
                         }
                     }
                     i = j
