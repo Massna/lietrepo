@@ -210,8 +210,7 @@ class PobreFlix : MainAPI() {
             val episodes = mutableListOf<Episode>()
             if (tmdbId != null) {
                 // episodios reais da pagina (window.seriesSeasonsData) — com titulos
-                val seasonsData = Regex("window\\.seriesSeasonsData\\s*=\\s*(\\[[\\s\\S]*?\\])\\s*;?\\s*</script>")
-                    .find(html)?.groupValues?.get(1)
+                val seasonsData = extractBalancedArray(html, Regex("window\\.seriesSeasonsData\\s*=\\s*\\["))
                 var parsed = false
                 if (!seasonsData.isNullOrBlank()) {
                     try {
@@ -259,6 +258,31 @@ class PobreFlix : MainAPI() {
         }
     }
 
+    /** Extrai o array JSON (aninhado) iniciado por `re` (que termina no '['). */
+    private fun extractBalancedArray(html: String, re: Regex): String? {
+        val m = re.find(html) ?: return null
+        var i = m.range.last
+        var depth = 0
+        var inStr = false
+        var esc = false
+        while (i < html.length) {
+            val c = html[i]
+            if (esc) { esc = false; i++; continue }
+            if (c == '\\') { esc = true; i++; continue }
+            if (inStr) {
+                if (c == '"') inStr = false
+                i++; continue
+            }
+            when (c) {
+                '"' -> inStr = true
+                '[' -> depth++
+                ']' -> { depth--; if (depth == 0) return html.substring(m.range.last..i) }
+            }
+            i++
+        }
+        return null
+    }
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -271,7 +295,7 @@ class PobreFlix : MainAPI() {
                 parts.size == 2 && parts[1] == "movie" -> {
                     val key = parts[0].trim()
                     if (key.isBlank() || key == "0") return false
-                    val streams = PobreFlixExtractor.getStreams(key, "filme", 1, 1)
+                    val streams = PobreFlixExtractor.getStreams(key, "filme", 1, 1, subtitleCallback)
                     streams.forEach { callback(it) }
                     streams.isNotEmpty()
                 }
@@ -280,7 +304,7 @@ class PobreFlix : MainAPI() {
                     if (key.isBlank() || key == "0") return false
                     val season = parts[1].toIntOrNull() ?: 1
                     val episode = parts[2].toIntOrNull() ?: 1
-                    val streams = PobreFlixExtractor.getStreams(key, "serie", season, episode)
+                    val streams = PobreFlixExtractor.getStreams(key, "serie", season, episode, subtitleCallback)
                     streams.forEach { callback(it) }
                     streams.isNotEmpty()
                 }
