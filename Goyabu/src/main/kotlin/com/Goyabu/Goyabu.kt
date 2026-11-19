@@ -345,8 +345,9 @@ class Goyabu : MainAPI() {
             for (script in scripts) {
                 val scriptContent = script.html()
 
-                if (scriptContent.contains("allEpisodes")) {
-                    val arrayContent = extractArrayContent(scriptContent, "allEpisodes")
+                for (arrayName in listOf("allEpisodes", "episodes", "episodeList", "episodios")) {
+                    if (!scriptContent.contains(arrayName)) continue
+                    val arrayContent = extractArrayContent(scriptContent, arrayName)
                     
                     if (arrayContent.isNotBlank()) {
                         val episodeObjects = extractJsonObjects(arrayContent)
@@ -430,8 +431,9 @@ class Goyabu : MainAPI() {
         
         var braceCount = 0
         var inString = false
+        var quoteChar = ' '
         var escapeNext = false
-        var i = startIndex + arrayName.length + 3
+        var i = startIndex
         
         while (i < scriptContent.length) {
             val char = scriptContent[i]
@@ -439,12 +441,15 @@ class Goyabu : MainAPI() {
             when {
                 escapeNext -> escapeNext = false
                 char == '\\' -> escapeNext = true
-                char == '"' -> inString = !inString
+                char == '"' || char == '\'' -> {
+                    if (!inString) { inString = true; quoteChar = char }
+                    else if (char == quoteChar) inString = false
+                }
                 !inString && char == '[' -> braceCount++
                 !inString && char == ']' -> {
                     braceCount--
                     if (braceCount == 0) {
-                        return scriptContent.substring(startIndex + arrayName.length + 3, i)
+                        return scriptContent.substring(startIndex + 1, i)
                     }
                 }
             }
