@@ -244,7 +244,7 @@ class AnimeFire : MainAPI() {
         }
     }
 
-    private fun emitPlayLink(
+    private suspend fun emitPlayLink(
         url: String,
         height: Int?,
         label: String,
@@ -300,8 +300,7 @@ class AnimeFire : MainAPI() {
         if (rel.startsWith("http")) return rel
         val b = base.substringBeforeLast("/")
         return if (rel.startsWith("/")) {
-            val origin = base.substringAfter("://").substringBefore("/")
-            "${base.substringBefore("://")}$origin$rel"
+            "${base.substringBefore("://")}://${base.substringAfter("://").substringBefore("/")}$rel"
         } else {
             "$b/$rel"
         }
