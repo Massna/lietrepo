@@ -1,10 +1,10 @@
 [
     {
         "iconUrl": "https://animefire.io/img/icons/favicon-192x192.png",
-        "fileHash": "sha256-562a92307e18c509ae90f00260312e8708916e0cbfbbe00e4b2a51e33e0c09ed",
+        "fileHash": "sha256-663773b0170ea7dd5460e1af37acd348628272d7865f5c5c9de6552811583308",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/lawlietbr/lietrepo",
-        "fileSize": 35575,
+        "fileSize": 38243,
         "status": 1,
         "language": "pt-br",
         "authors": [
@@ -13,7 +13,7 @@
         "tvTypes": [
             "Animes"
         ],
-        "version": 4,
+        "version": 5,
         "internalName": "AnimeFire",
         "description": "Site brasileiro de animes em portugu\u00eas",
         "url": "https://github.com/Massna/lietrepo/raw/refs/heads/main/builds/AnimeFire.cs3",
@@ -123,10 +123,10 @@
     },
     {
         "iconUrl": "https://goyabu.io/wp-content/uploads/2025/12/cropped-goyabu-favicon-192x192.png",
-        "fileHash": "sha256-6a4d08ab0c435bd4a93760aeef064653f665a818a689c2b255b566b361e0bbe1",
+        "fileHash": "sha256-7a68e538dd69cf6a28a9e498b3812b2f79ba3aab74daf1b7eaadaf4b4d4eda71",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/lawlietbr/lietrepo",
-        "fileSize": 32643,
+        "fileSize": 32684,
         "status": 1,
         "language": "pt-br",
         "authors": [
@@ -135,7 +135,7 @@
         "tvTypes": [
             "Animes"
         ],
-        "version": 3,
+        "version": 4,
         "internalName": "Goyabu",
         "description": "Animes Online em HD gratuitamente no Goyabu",
         "url": "https://github.com/Massna/lietrepo/raw/refs/heads/main/builds/Goyabu.cs3",
@@ -165,10 +165,10 @@
     },
     {
         "iconUrl": "https://www.image2url.com/r2/default/images/1776018665375-eafe8c65-10f1-490c-9994-2f519402b6e3.png",
-        "fileHash": "sha256-ef877f939a1cccc0d8f63b60b68df25996eac83ecd814cb2ddc6de7b2955be47",
+        "fileHash": "sha256-f1f0caeedc193152ae413eacfe92dfd6905731794646b4cfc6c97d86a73ab286",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/lawlietbr/lietrepo",
-        "fileSize": 31648,
+        "fileSize": 33737,
         "status": 1,
         "language": "pt-br",
         "authors": [
@@ -180,7 +180,7 @@
             "Animes",
             "AsianDrama"
         ],
-        "version": 5,
+        "version": 6,
         "internalName": "PobreFlix",
         "description": "PobreFlix, assistir online, filmes, s\u00e9ries, animes, doramas",
         "url": "https://github.com/Massna/lietrepo/raw/refs/heads/main/builds/PobreFlix.cs3",
