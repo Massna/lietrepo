@@ -4,6 +4,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.json.JSONObject
 import org.jsoup.nodes.Element
 
 class Goyabu : MainAPI() {
@@ -305,14 +306,19 @@ class Goyabu : MainAPI() {
             val isDubbed = rawTitle.contains("dublado", ignoreCase = true) ||
                           document.selectFirst(".audio-box.dublado, .dublado") != null
 
-            val episodes = extractEpisodesFromJavaScript(document, url)
-            val fallbackEpisodes = if (episodes.isEmpty()) {
+            val episodes = fetchEpisodesByAjax(document, url)
+            val jsEpisodes = if (episodes.isEmpty()) {
+                extractEpisodesFromJavaScript(document, url)
+            } else {
+                emptyList()
+            }
+            val fallbackEpisodes = if (episodes.isEmpty() && jsEpisodes.isEmpty()) {
                 extractEpisodesFallback(document, url)
             } else {
                 emptyList()
             }
-            
-            val allEpisodes = episodes + fallbackEpisodes
+
+            val allEpisodes = episodes + jsEpisodes + fallbackEpisodes
             val sortedEpisodes = allEpisodes.sortedBy { it.episode }
 
             newAnimeLoadResponse(title, url, TvType.Anime) {
@@ -334,6 +340,50 @@ class Goyabu : MainAPI() {
                 this.plot = "Erro: ${e.message}"
             }
         }
+    }
+
+    /**
+     * Episodios vem por AJAX (validado no HTML de nov/2026):
+     *   GET /wp-admin/admin-ajax.php?action=get_anime_episodes&anime_id=<streamer_id>
+     *   -> {"success":true,"data":[{"id":76051,"episodio":"2","link":"/76051",
+     *        "imagem":"...","type":"episode","episode_name":"..."}]}
+     */
+    private suspend fun fetchEpisodesByAjax(document: org.jsoup.nodes.Document, baseUrl: String): List<Episode> {
+        val episodes = mutableListOf<Episode>()
+        try {
+            val html = document.html()
+            val animeId = Regex("streamer_id\\s*=\\s*Number\\(\\s*\"(\\d+)\"").find(html)?.groupValues?.get(1)
+                ?: Regex("streamerID\\s*=\\s*'(\\d+)'").find(html)?.groupValues?.get(1)
+                ?: Regex("data-post-id=\"(\\d+)\"").find(html)?.groupValues?.get(1)
+                ?: Regex("anime_id\\s*[:=]\\s*['\"]?(\\d+)").find(html)?.groupValues?.get(1)
+                ?: return emptyList()
+            val json = app.get(
+                "$mainUrl/wp-admin/admin-ajax.php?action=get_anime_episodes&anime_id=$animeId",
+                headers = mapOf("Referer" to baseUrl),
+                timeout = 20
+            ).text
+            val arr = JSONObject(json).optJSONArray("data") ?: return emptyList()
+            for (i in 0 until arr.length()) {
+                try {
+                    val o = arr.optJSONObject(i) ?: continue
+                    val num = o.optString("episodio").toIntOrNull() ?: (i + 1)
+                    val link = o.optString("link").takeIf { it.isNotBlank() }?.let { fixUrl(it) }
+                        ?: "$mainUrl/${o.opt("id")}/"
+                    val title = o.optString("episode_name").ifBlank { o.optString("title") }
+                    val type = o.optString("type").ifBlank { "episode" }
+                    val label = if (type != "episode") "${title.ifBlank { "Episódio $num" }} ($type)"
+                                else title.ifBlank { "Episódio $num" }
+                    episodes.add(newEpisode(link) {
+                        this.name = label
+                        this.episode = num
+                        this.season = 1
+                    })
+                } catch (_: Exception) {
+                }
+            }
+        } catch (_: Exception) {
+        }
+        return episodes
     }
 
     private fun extractEpisodesFromJavaScript(document: org.jsoup.nodes.Document, baseUrl: String): List<Episode> {
