@@ -1,10 +1,10 @@
 [
     {
         "iconUrl": "https://animefire.io/img/icons/favicon-192x192.png",
-        "fileHash": "sha256-663773b0170ea7dd5460e1af37acd348628272d7865f5c5c9de6552811583308",
+        "fileHash": "sha256-399cf2e39370aa3386892d873d9be8d4eafa2177d676f03313fe11bff61bbc57",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/lawlietbr/lietrepo",
-        "fileSize": 38243,
+        "fileSize": 38330,
         "status": 1,
         "language": "pt-br",
         "authors": [
@@ -13,7 +13,7 @@
         "tvTypes": [
             "Animes"
         ],
-        "version": 5,
+        "version": 6,
         "internalName": "AnimeFire",
         "description": "Site brasileiro de animes em portugu\u00eas",
         "url": "https://github.com/Massna/lietrepo/raw/refs/heads/main/builds/AnimeFire.cs3",
