@@ -123,10 +123,10 @@
     },
     {
         "iconUrl": "https://goyabu.io/wp-content/uploads/2025/12/cropped-goyabu-favicon-192x192.png",
-        "fileHash": "sha256-7a68e538dd69cf6a28a9e498b3812b2f79ba3aab74daf1b7eaadaf4b4d4eda71",
+        "fileHash": "sha256-ea8e4a7c2c89a34c157cf35b91d99a439f9cea6b3cbae69e9e4a8793bb6f5c72",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/lawlietbr/lietrepo",
-        "fileSize": 32684,
+        "fileSize": 32804,
         "status": 1,
         "language": "pt-br",
         "authors": [
@@ -135,7 +135,7 @@
         "tvTypes": [
             "Animes"
         ],
-        "version": 4,
+        "version": 5,
         "internalName": "Goyabu",
         "description": "Animes Online em HD gratuitamente no Goyabu",
         "url": "https://github.com/Massna/lietrepo/raw/refs/heads/main/builds/Goyabu.cs3",
