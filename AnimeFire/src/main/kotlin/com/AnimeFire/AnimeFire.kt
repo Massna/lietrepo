@@ -230,12 +230,17 @@ class AnimeFire : MainAPI() {
                     // derruba a selecao de trilhas do ExoPlayer em aparelhos sem AV1.
                     // Por isso emitimos as variantes de midia DIRETAS (e o master
                     // apenas como "Auto").
+                    // Master ilegivel = arquivo fora do ar no CDN deles (token
+                    // fixo por episodio nao renova — episodios antigos somem).
+                    // Nao emitimos link quebrado nesse caso.
                     val variants = hlsVariants(streamUrl)
-                    for ((vUrl, vHeight) in variants) {
-                        emitPlayLink(vUrl, vHeight ?: height, label, callback)
+                    if (variants.isNotEmpty()) {
+                        for ((vUrl, vHeight) in variants) {
+                            emitPlayLink(vUrl, vHeight ?: height, label, callback)
+                        }
+                        emitPlayLink(streamUrl, height, "$label Auto", callback)
+                        found = true
                     }
-                    emitPlayLink(streamUrl, height, "$label Auto", callback)
-                    found = true
                 }
             }
             found
