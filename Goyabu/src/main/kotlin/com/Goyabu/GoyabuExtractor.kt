@@ -62,7 +62,7 @@ object GoyabuExtractor {
                     ).text
                     val norm = page.unescapeHtml()
                     Regex("https://[^\"'\\s<>]+googlevideo\\.com/[^\"'\\s<>]+")
-                        .findAll(norm).map { it.value }.distinct().forEach { u ->
+                        .findAll(norm).map { it.value.trimEnd('\\') }.distinct().forEach { u ->
                             if (!u.contains("videoplayback")) return@forEach
                             val itag = Regex("[?&]itag=(\\d+)").find(u)?.groupValues?.get(1)?.toIntOrNull() ?: 0
                             val q = itagQualityMap[itag] ?: 0
@@ -70,6 +70,10 @@ object GoyabuExtractor {
                                 newExtractorLink("Goyabu", "$name (${if (q > 0) "${q}p" else "SD"})", u, ExtractorLinkType.VIDEO) {
                                     this.quality = q
                                     this.referer = "https://www.blogger.com/"
+                                    this.headers = mapOf(
+                                        "User-Agent" to UA,
+                                        "Referer" to "https://www.blogger.com/"
+                                    )
                                 }
                             )
                             emitted = true
