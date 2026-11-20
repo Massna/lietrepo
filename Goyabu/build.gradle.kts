@@ -1,4 +1,4 @@
-version = 6
+version = 7
 
 cloudstream {
     description = "Animes Online em HD gratuitamente no Goyabu"
